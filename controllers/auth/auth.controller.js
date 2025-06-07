@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../../models/User");
 
 //register
-const register = async (req, res) => {
+const registerUser = async (req, res) => {
   const { userName, email, password } = req.body;
   try {
     const checkUser = await User.findOne({ email });
@@ -39,7 +39,7 @@ const register = async (req, res) => {
 };
 
 //login
-const login = async (req, res) => {
+const loginUser = async (req, res) => {
   const { email, password } = req.body;
   try {
     const checkUser = await User.findOne({ email });
@@ -65,10 +65,10 @@ const login = async (req, res) => {
         email: checkUser.email,
       },
       "CLIENT_SECRET_KEY",
-      { expiresIn: "1h" }
+      { expiresIn: "60m" }
     );
 
-    res.cookie("token", token, { httppOnly: true, secure: false }).json({
+    res.cookie("token", token, { httpOnly: true, secure: false }).json({
       success: true,
       message: "Login successfully",
       user: {
@@ -88,7 +88,32 @@ const login = async (req, res) => {
 };
 
 // logout
+const logoutUser = (req, res) => {
+  res.clearCookie("token").json({
+    success: true,
+    message: "Logout successfully",
+  });
+};
 
 // auth middleware
+const authMiddleware = async (req, res, next) => {
+  const token = req.cookies.token;
+  if (!token) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized. please login first!",
+    });
+  }
+  try {
+    const decoded = jwt.verify(token, "CLIENT_SECRET_KEY");
+    req.user = decoded;
+    next();
+  } catch (error) {
+    res.status(401).json({
+      success: false,
+      message: "Unauthorized. please login first!",
+    });
+  }
+};
 
-module.exports = { register, login };
+module.exports = { registerUser, loginUser, logoutUser, authMiddleware };
