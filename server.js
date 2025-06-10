@@ -3,10 +3,11 @@ const mongoose = require("mongoose");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const authRouter = require("./routes/auth/auth.route");
+require("dotenv").config();
 
 mongoose
-  .connect("mongodb+srv://dimseps:ecommerceapp25@cluster0.oyllcfx.mongodb.net/")
-  .then(() => console.log("Connected to DB"))
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log("Connected to MONGODB"))
   .catch((err) => console.log(err));
 
 const app = express();
@@ -14,7 +15,7 @@ const PORT = process.env.PORT || 5000;
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: process.env.CLIENT_ORIGIN,
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: [
       "Content-Type",
