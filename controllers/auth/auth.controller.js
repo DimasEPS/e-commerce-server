@@ -89,10 +89,20 @@ const loginUser = async (req, res) => {
 
 // logout
 const logoutUser = (req, res) => {
-  res.clearCookie("token").json({
-    success: true,
-    message: "Logout successfully",
-  });
+  try {
+    res.clearCookie("token", { httpOnly: true, secure: false });
+
+    return res.status(200).json({
+      success: true,
+      message: "Logout successfully",
+    });
+  } catch (e) {
+    console.error("Logout error:", e);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error during logout",
+    });
+  }
 };
 
 // auth middleware
