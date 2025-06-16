@@ -24,12 +24,21 @@ const handleImageUpload = async (req, res) => {
 // function to add a new product
 const addProduct = async (req, res) => {
   try {
-    const { image, title, description, brand, price, salePrice, stock } =
-      req.body;
+    const {
+      image,
+      title,
+      description,
+      category,
+      brand,
+      price,
+      salePrice,
+      stock,
+    } = req.body;
     const newlyCreatedProduct = new Product({
       image,
       title,
       description,
+      category,
       brand,
       price,
       salePrice,
@@ -86,6 +95,7 @@ const editProduct = async (req, res) => {
       findProduct.image = image || findProduct.image;
       findProduct.title = title || findProduct.title;
       findProduct.description = description || findProduct.description;
+      findProduct.category = category || findProduct.category;
       findProduct.brand = brand || findProduct.brand;
       findProduct.price = price || findProduct.price;
       findProduct.salePrice = salePrice || findProduct.salePrice;

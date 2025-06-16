@@ -4,7 +4,7 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const authRouter = require("./routes/auth/auth.route");
 require("dotenv").config();
-const adminProductsRouter = require("./routes/admin/products.routes");
+const adminProductsRouter = require("./routes/admin/products.route");
 
 mongoose
   .connect(process.env.MONGO_URI)
