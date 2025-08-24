@@ -5,11 +5,10 @@ const cors = require("cors");
 const authRouter = require("./routes/auth/auth.route");
 require("dotenv").config();
 const adminProductsRouter = require("./routes/admin/products.route");
+const connectDB = require("./database/database");
 
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("Connected to MONGODB"))
-  .catch((err) => console.log(err));
+// Connect to MongoDB
+connectDB();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -18,6 +17,7 @@ app.use(
   cors({
     origin: process.env.CLIENT_ORIGIN,
     methods: ["GET", "POST", "PUT", "DELETE"],
+    optionsSuccessStatus: 204,
     allowedHeaders: [
       "Content-Type",
       "Authorization",
