@@ -18,6 +18,7 @@ const registerUser = async (req, res) => {
       userName,
       email,
       password: hashPassword,
+      createdAt: new Date(),
     });
 
     await newUser.save();
@@ -27,10 +28,51 @@ const registerUser = async (req, res) => {
       user: {
         userName: newUser.userName,
         email: newUser.email,
+        createdAt: newUser.createdAt,
       },
     });
   } catch (e) {
-    console.log(e);
+    console.log("error user register: ", e);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// admin register
+const registerAdmin = async (req, res) => {
+  const { userName, email, password } = req.body;
+  try {
+    const checkUser = await User.findOne({ email });
+    if (checkUser) {
+      return res.json({
+        success: false,
+        message: "Email alredy being used by another admin",
+      });
+    }
+    const hashPassword = await bcrypt.hash(password, 10);
+    const newAdmin = new User({
+      userName,
+      email,
+      password: hashPassword,
+      role: "admin",
+      createdAt: new Date(),
+    });
+
+    await newAdmin.save();
+    res.status(201).json({
+      success: true,
+      message: "New admin account created successfully",
+      user: {
+        userName: newAdmin.userName,
+        email: newAdmin.email,
+        role: newAdmin.role,
+        createdAt: newAdmin.createdAt,
+      },
+    });
+  } catch (e) {
+    console.log("error admin register: ", e);
     res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -79,7 +121,7 @@ const loginUser = async (req, res) => {
       },
     });
   } catch (e) {
-    console.log(e);
+    console.log("error user login: ", e);
     res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -105,4 +147,4 @@ const logoutUser = (req, res) => {
   }
 };
 
-module.exports = { registerUser, loginUser, logoutUser };
+module.exports = { registerUser, registerAdmin, loginUser, logoutUser };
