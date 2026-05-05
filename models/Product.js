@@ -4,7 +4,7 @@ const productSchema = new mongoose.Schema(
   {
     image: {
       type: String,
-      required: true,
+      default: "",
     },
     title: {
       type: String,
@@ -28,11 +28,48 @@ const productSchema = new mongoose.Schema(
     },
     salePrice: {
       type: Number,
-      required: true,
+      default: 0,
     },
     stock: {
       type: Number,
       required: true,
+    },
+    // Pet shop specific fields
+    hewan: {
+      type: String,
+      default: "",
+    },
+    kat: {
+      type: String,
+      default: "",
+    },
+    subkat: {
+      type: String,
+      default: "",
+    },
+    rating: {
+      type: Number,
+      default: 0,
+    },
+    reviews: {
+      type: Number,
+      default: 0,
+    },
+    sold: {
+      type: Number,
+      default: 0,
+    },
+    emoji: {
+      type: String,
+      default: "",
+    },
+    badge: {
+      type: String,
+      default: "",
+    },
+    isNewProduct: {
+      type: Boolean,
+      default: false,
     },
   },
   {

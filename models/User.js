@@ -19,6 +19,22 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: "user",
   },
+  phone: {
+    type: String,
+    default: "",
+  },
+  city: {
+    type: String,
+    default: "",
+  },
+  province: {
+    type: String,
+    default: "",
+  },
+  bio: {
+    type: String,
+    default: "",
+  },
   createdAt: {
     type: Date,
     default: Date.now,

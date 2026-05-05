@@ -7,8 +7,13 @@ const {
   deleteProduct,
 } = require("../../controllers/admin/products.controller");
 const { upload } = require("../../helpers/cloudinary");
+const authMiddleware = require("../../middlewares/auth/auth.middleware");
+const adminMiddleware = require("../../middlewares/admin/admin.middleware");
 
 const router = express.Router();
+
+// All routes require auth + admin
+router.use(authMiddleware, adminMiddleware);
 
 // Route to handle image upload
 router.post("/upload-image", upload.single("imageFile"), handleImageUpload);

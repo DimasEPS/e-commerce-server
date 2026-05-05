@@ -6,11 +6,12 @@ const {
   logoutUser,
 } = require("../../controllers/auth/auth.controller");
 const authMiddleware = require("../../middlewares/auth/auth.middleware");
+const adminMiddleware = require("../../middlewares/admin/admin.middleware");
 
 const router = express.Router();
 
 router.post("/register", registerUser);
-router.post("/register-admin", registerAdmin);
+router.post("/register-admin", authMiddleware, adminMiddleware, registerAdmin);
 router.post("/login", loginUser);
 router.post("/logout", logoutUser);
 router.get("/check-auth", authMiddleware, (req, res) => {

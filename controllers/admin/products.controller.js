@@ -82,7 +82,7 @@ const getAllProducts = async (req, res) => {
 const editProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const { image, title, description, brand, price, salePrice, stock } =
+    const { image, title, description, category, brand, price, salePrice, stock } =
       req.body;
 
     const findProduct = await Product.findById(id);
