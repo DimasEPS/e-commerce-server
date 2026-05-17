@@ -1,4 +1,5 @@
 const Booking = require("../../models/Booking");
+const snap = require("../../config/midtrans");
 
 // Get user's bookings
 const getBookings = async (req, res) => {
@@ -27,6 +28,7 @@ const createBooking = async (req, res) => {
       ownerName,
       phone,
       notes,
+      price,
     } = req.body;
 
     // Check for duplicate booking on same date/time
@@ -54,14 +56,55 @@ const createBooking = async (req, res) => {
       ownerName,
       phone,
       notes: notes || "",
+      price: price || 0,
     });
 
     await booking.save();
+
+    // Generate Midtrans Snap token
+    let snapToken = "";
+    let snapRedirectUrl = "";
+
+    try {
+      const midtransParams = {
+        transaction_details: {
+          order_id: booking._id.toString(),
+          gross_amount: booking.price,
+        },
+        item_details: [
+          {
+            id: `SVC-${booking.service}`,
+            price: booking.price,
+            quantity: 1,
+            name: `Grooming: ${booking.service}`.substring(0, 50),
+          }
+        ],
+        customer_details: {
+          first_name: booking.ownerName,
+          phone: booking.phone,
+        },
+      };
+
+      const snapResponse = await snap.createTransaction(midtransParams);
+      snapToken = snapResponse.token;
+      snapRedirectUrl = snapResponse.redirect_url;
+
+      // Save token to booking
+      booking.midtransToken = snapToken;
+      booking.midtransRedirectUrl = snapRedirectUrl;
+      await booking.save();
+    } catch (midtransError) {
+      console.log("Midtrans token generation failed:", midtransError.message);
+    }
+
     res.status(201).json({
       success: true,
       message: "Booking created successfully",
       data: booking,
+      snapToken,
+      snapRedirectUrl,
     });
+
   } catch (e) {
     console.log("Error in createBooking:", e);
     res.status(500).json({ success: false, message: "Internal server error" });

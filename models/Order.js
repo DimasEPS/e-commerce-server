@@ -37,6 +37,14 @@ const orderSchema = new mongoose.Schema(
       type: String,
       default: "qris",
     },
+    midtransToken: {
+      type: String,
+      default: "",
+    },
+    midtransRedirectUrl: {
+      type: String,
+      default: "",
+    },
     status: {
       type: String,
       enum: [

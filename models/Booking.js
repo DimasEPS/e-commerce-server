@@ -53,6 +53,19 @@ const bookingSchema = new mongoose.Schema(
       enum: ["pending", "confirmed", "completed", "cancelled"],
       default: "pending",
     },
+    price: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+    midtransToken: {
+      type: String,
+      default: "",
+    },
+    midtransRedirectUrl: {
+      type: String,
+      default: "",
+    },
   },
   { timestamps: true }
 );

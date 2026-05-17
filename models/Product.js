@@ -15,8 +15,8 @@ const productSchema = new mongoose.Schema(
       required: true,
     },
     category: {
-      type: String,
-      required: true,
+      type: [String],
+      default: [],
     },
     brand: {
       type: String,
@@ -36,16 +36,16 @@ const productSchema = new mongoose.Schema(
     },
     // Pet shop specific fields
     hewan: {
-      type: String,
-      default: "",
+      type: [String],
+      default: [],
     },
     kat: {
-      type: String,
-      default: "",
+      type: [String],
+      default: [],
     },
     subkat: {
-      type: String,
-      default: "",
+      type: [String],
+      default: [],
     },
     rating: {
       type: Number,

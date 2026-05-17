@@ -10,6 +10,8 @@ const authRouter = require("./routes/auth/auth.route");
 require("dotenv").config();
 const adminProductsRouter = require("./routes/admin/products.route");
 const adminUsersRouter = require("./routes/admin/users.route");
+const adminOrdersRouter = require("./routes/admin/orders.route");
+const adminBookingsRouter = require("./routes/admin/bookings.route");
 const connectDB = require("./database/database");
 
 // Shop routes
@@ -52,6 +54,8 @@ app.use("/api/auth", authRouter);
 // Admin routes
 app.use("/api/admin/products", adminProductsRouter);
 app.use("/api/admin/users", adminUsersRouter);
+app.use("/api/admin/orders", adminOrdersRouter);
+app.use("/api/admin/bookings", adminBookingsRouter);
 
 // Shop (user) routes
 app.use("/api/shop/products", shopProductsRouter);

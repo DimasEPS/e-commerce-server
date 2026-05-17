@@ -1,6 +1,8 @@
 const Order = require("../../models/Order");
 const Cart = require("../../models/Cart");
 const Product = require("../../models/Product");
+const Booking = require("../../models/Booking");
+const snap = require("../../config/midtrans");
 
 // Get user's orders
 const getOrders = async (req, res) => {
@@ -34,7 +36,7 @@ const getOrderById = async (req, res) => {
   }
 };
 
-// Create order from cart
+// Create order from cart + generate Midtrans Snap token
 const createOrder = async (req, res) => {
   try {
     const { shippingAddress, shippingMethod, paymentMethod } = req.body;
@@ -79,10 +81,20 @@ const createOrder = async (req, res) => {
       });
     }
 
+    // Normalize shippingAddress: FE may send 'street' instead of 'address'
+    const normalizedAddress = {
+      name: shippingAddress?.name || "",
+      phone: shippingAddress?.phone || "",
+      address: shippingAddress?.address || shippingAddress?.street || "",
+      city: shippingAddress?.city || "",
+      province: shippingAddress?.province || "",
+      postalCode: shippingAddress?.postalCode || "",
+    };
+
     const order = new Order({
       userId: req.user.id,
       items,
-      shippingAddress,
+      shippingAddress: normalizedAddress,
       shippingMethod: shippingMethod || {},
       paymentMethod: paymentMethod || "qris",
       subtotal,
@@ -92,6 +104,60 @@ const createOrder = async (req, res) => {
 
     await order.save();
 
+    // Generate Midtrans Snap token
+    let snapToken = "";
+    let snapRedirectUrl = "";
+
+    try {
+      const midtransItems = items.map((i) => ({
+        id: i.productId.toString(),
+        price: i.price,
+        quantity: i.qty,
+        name: i.title.substring(0, 50), // Midtrans max 50 chars
+      }));
+
+      // Add shipping as an item if present
+      if (shippingCost > 0) {
+        midtransItems.push({
+          id: "SHIPPING",
+          price: shippingCost,
+          quantity: 1,
+          name: shippingMethod?.label || "Ongkos Kirim",
+        });
+      }
+
+      const midtransParams = {
+        transaction_details: {
+          order_id: order._id.toString(),
+          gross_amount: total,
+        },
+        item_details: midtransItems,
+        customer_details: {
+          first_name: normalizedAddress.name,
+          phone: normalizedAddress.phone,
+          shipping_address: {
+            first_name: normalizedAddress.name,
+            phone: normalizedAddress.phone,
+            address: normalizedAddress.address,
+            city: normalizedAddress.city,
+            postal_code: normalizedAddress.postalCode,
+          },
+        },
+      };
+
+      const snapResponse = await snap.createTransaction(midtransParams);
+      snapToken = snapResponse.token;
+      snapRedirectUrl = snapResponse.redirect_url;
+
+      // Save token to order
+      order.midtransToken = snapToken;
+      order.midtransRedirectUrl = snapRedirectUrl;
+      await order.save();
+    } catch (midtransError) {
+      console.log("Midtrans token generation failed:", midtransError.message);
+      // Order is still created, payment can be retried
+    }
+
     // Clear cart
     cart.items = [];
     await cart.save();
@@ -100,6 +166,8 @@ const createOrder = async (req, res) => {
       success: true,
       message: "Order created successfully",
       data: order,
+      snapToken,
+      snapRedirectUrl,
     });
   } catch (e) {
     console.log("Error in createOrder:", e);
@@ -149,4 +217,61 @@ const cancelOrder = async (req, res) => {
   }
 };
 
-module.exports = { getOrders, getOrderById, createOrder, cancelOrder };
+// Midtrans Webhook / Notification handler
+const handleMidtransWebhook = async (req, res) => {
+  try {
+    const notification = req.body;
+    const orderId = notification.order_id;
+    const transactionStatus = notification.transaction_status;
+    const fraudStatus = notification.fraud_status;
+
+    let isOrder = true;
+    let document = await Order.findById(orderId);
+    
+    if (!document) {
+      document = await Booking.findById(orderId);
+      isOrder = false;
+    }
+
+    if (!document) {
+      return res.status(404).json({ message: "Transaction not found" });
+    }
+
+    // Map Midtrans statuses
+    if (transactionStatus === "capture" || transactionStatus === "settlement") {
+      if (fraudStatus === "accept" || !fraudStatus) {
+        document.status = "confirmed";
+      }
+    } else if (
+      transactionStatus === "cancel" ||
+      transactionStatus === "deny" ||
+      transactionStatus === "expire"
+    ) {
+      // Restore stock on payment failure if it's an order
+      if (isOrder && document.status === "pending") {
+        for (const item of document.items) {
+          await Product.findByIdAndUpdate(item.productId, {
+            $inc: { stock: item.qty, sold: -item.qty },
+          });
+        }
+      }
+      document.status = "cancelled";
+    } else if (transactionStatus === "pending") {
+      document.status = "pending";
+    }
+
+    await document.save();
+    res.status(200).json({ success: true, message: "Webhook processed" });
+  } catch (e) {
+    console.log("Error in handleMidtransWebhook:", e);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+module.exports = {
+  getOrders,
+  getOrderById,
+  createOrder,
+  cancelOrder,
+  handleMidtransWebhook,
+};
